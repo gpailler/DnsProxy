@@ -1,0 +1,101 @@
+name: DnsProxy CI
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  
+env:
+  CONFIGURATION: Release
+
+jobs:
+  build:
+    name: Build and Publish ⚙️📦
+    runs-on: ubuntu-latest
+    outputs:
+      semVer: ${{ steps.gitversion.outputs.semVer }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # Full history is required by GitVersion
+
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.7
+      with:
+        versionSpec: '5.x'
+
+    - name: Run GitVersion
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v0.9.7
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+
+    - name: Publish win-x64
+      run: >-
+        dotnet publish
+        --configuration ${{ env.CONFIGURATION }}
+        --runtime win-x64
+        --output ./artifacts/win-x64
+        -p:Version=${{ env.GITVERSION_SEMVER }}
+        -p:FileVersion=${{ env.GITVERSION_ASSEMBLYSEMFILEVER }}
+        -p:InformationalVersion=${{ env.GITVERSION_INFORMATIONALVERSION }}
+
+    - name: Publish win-x64 self-contained
+      run: >-
+        dotnet publish
+        --configuration ${{ env.CONFIGURATION }}
+        --runtime win-x64
+        --output ./artifacts/win-x64-self-contained
+        -p:Version=${{ env.GITVERSION_SEMVER }}
+        -p:FileVersion=${{ env.GITVERSION_ASSEMBLYSEMFILEVER }}
+        -p:InformationalVersion=${{ env.GITVERSION_INFORMATIONALVERSION }}
+        --self-contained true
+        -p:PublishTrimmed=true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: Binaries
+        path: ./artifacts
+        if-no-files-found: error
+
+  release:
+    name: Release 🚀🌐
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: Binaries
+          path: ./artifacts/
+
+      - name: Archive win-x64
+        uses: thedoctor0/zip-release@master
+        with:
+          directory: ./artifacts/win-x64/
+          filename: 'DnsProxy-win-x64-${{ needs.build.outputs.semVer }}.zip'
+
+      - name: Archive win-x64-self-contained
+        uses: thedoctor0/zip-release@master
+        with:
+          directory: ./artifacts/win-x64-self-contained/
+          filename: 'DnsProxy-win-x64-self-contained-${{ needs.build.outputs.semVer }}.zip'
+    
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            ./artifacts/win-x64/*.zip
+            ./artifacts/win-x64-self-contained/*.zip
+          draft: true
