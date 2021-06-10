@@ -1,4 +1,9 @@
 ﻿# DnsProxy
+ 
+ 
+[![Build status](https://github.com/gpailler/DnsProxy/actions/workflows/main.yml/badge.svg)](https://github.com/gpailler/DnsProxy/actions/workflows/main.yml)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/gpailler/DnsProxy)](https://github.com/gpailler/DnsProxy/releases)
+[![License](https://img.shields.io/github/license/gpailler/DnsProxy)](https://github.com/gpailler/DnsProxy/blob/master/LICENSE)
 
 ### Description
 DnsProxy is a lightweight DNS forwarder designed to forward DNS queries to real, recursive DNS servers based on configurable rules.
