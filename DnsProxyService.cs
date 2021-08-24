@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using DNS.Client;
 using DNS.Client.RequestResolver;
 using DNS.Server;
 using DnsProxy.Options;
@@ -71,9 +72,15 @@ namespace DnsProxy
                     return;
                 }
 
-                if (e.Exception is SocketException ex && ex.ErrorCode == 10051)
+                if (e.Exception is SocketException { ErrorCode: 10051 or 10065 })
                 {
                     // System.Net.Sockets.SocketException (10051): A socket operation was attempted to an unreachable network.
+                    // System.Net.Sockets.SocketException (10065): A socket operation was attempted to an unreachable host.
+                    return;
+                }
+
+                if (e.Exception is ResponseException)
+                {
                     return;
                 }
 
