@@ -6,10 +6,11 @@
 
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-        <PublishSingleFile>true</PublishSingleFile>
-        <SelfContained>false</SelfContained>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <WarningsAsErrors>True</WarningsAsErrors>
+        <NoWarn>$(NoWarn);CA1416</NoWarn>
         <Copyright>Grégoire Pailler</Copyright>
         <AssemblyVersion>2.0.0</AssemblyVersion>
         <FileVersion>2.0.0</FileVersion>
@@ -21,14 +22,17 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
       <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
-      <PackageReference Include="NLog" Version="5.3.3" />
-      <PackageReference Include="NLog.Extensions.Logging" Version="5.3.12" />
-      <PackageReference Include="Topshelf" Version="4.3.0" />
-      <PackageReference Include="Topshelf.MicrosoftDependencyInjection.NetStd" Version="1.1.0" />
-      <PackageReference Include="Topshelf.NLog" Version="4.3.0" />
+      <PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
+      <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+      <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+      <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+      <PackageReference Include="System.Management" Version="8.0.0" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,71 +1,53 @@
-﻿using System;
-using DNS.Client.RequestResolver;
+﻿using DNS.Client.RequestResolver;
+using DnsProxy;
 using DnsProxy.Options;
 using DnsProxy.Resolvers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using NLog;
-using NLog.Extensions.Logging;
-using Topshelf;
-using Topshelf.MicrosoftDependencyInjection;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+using Microsoft.Extensions.Hosting;
+using Serilog;
+using Serilog.Core;
 
-namespace DnsProxy
+var builder = Host.CreateApplicationBuilder(args);
+
+// Logging
+ builder.Services.AddSerilog((provider, configuration) =>
 {
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            var provider = RegisterServices();
+    var env = provider.GetRequiredService<IHostEnvironment>();
+    var logFile = Path.Combine(env.ContentRootPath, Path.ChangeExtension(env.ApplicationName,"log"));
 
-            var host = HostFactory.New(hostConfig =>
-            {
-                hostConfig.UseNLog(LogManager.LogFactory);
-                hostConfig.UseServiceProvider(provider);
-                hostConfig.Service<DnsProxyService>(config =>
-                {
-                    config.ConstructUsingServiceProvider();
-                    config.WhenStarted((instance, hostControl) => instance.Start(hostControl));
-                    config.WhenStopped((instance, hostControl) => instance.Stop(hostControl));
-                });
-                hostConfig.RunAsNetworkService();
-                hostConfig.SetDescription("Dns proxy service");
-            });
+    configuration
+        .MinimumLevel.ControlledBy(provider.GetRequiredService<LoggingLevelSwitch>())
+        .Enrich.WithProcessId()
+        .WriteTo.File(
+            logFile,
+            shared: true,
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 7,
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [PID: {ProcessId}] {Message:lj}{NewLine}{Exception}")
+        .WriteTo.Console();
+});
 
-            var returnCode = host.Run();
-            Environment.Exit((int)returnCode);
-        }
+// Options
+builder.Services.Configure<ListenOptions>(builder.Configuration.GetRequiredSection(ListenOptions.Key));
+builder.Services.Configure<DefaultResolverOptions>(builder.Configuration.GetRequiredSection(DefaultResolverOptions.Key));
+builder.Services.Configure<CustomResolversOptions>(builder.Configuration.GetRequiredSection(CustomResolversOptions.Key));
+builder.Services.Configure<MonitoringOptions>(builder.Configuration.GetRequiredSection(MonitoringOptions.Key));
 
-        private static IServiceProvider RegisterServices()
-        {
-            var services = new ServiceCollection();
+// Services
+builder.Services.AddTransient<IRequestResolver, CompositeRequestResolver>();
+builder.Services.AddScoped<IRequestResolverFactory, RequestResolverFactory>();
+builder.Services.AddScoped<ICustomRequestResolverFactory, CustomRequestResolverFactory>();
+builder.Services.AddSingleton<WindowsServiceHelper>();
+builder.Services.AddSingleton<CommandLineParser>();
+builder.Services.AddSingleton<InterfacesMonitoring>();
+builder.Services.AddSingleton<LoggingLevelSwitch>();
+builder.Services.AddHostedService<DnsProxyService>();
 
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.base.json", optional: false, reloadOnChange: false)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-                .Build();
+// Service configuration
+builder.Services.AddWindowsService(options => options.ServiceName = WindowsServiceHelper.ServiceName);
 
-            services.AddLogging(loggingBuilder =>
-            {
-                loggingBuilder.AddNLog(config);
-                loggingBuilder.SetMinimumLevel(LogLevel.Trace);
+// Run app
+using var host = builder.Build();
 
-                // Read NLog configuration from appsettings.json
-                LogManager.Configuration = new NLogLoggingConfiguration(config.GetSection("NLog"));
-            });
-
-            services.Configure<ListenOptions>(config.GetSection(ListenOptions.Key));
-            services.Configure<DefaultResolverOptions>(config.GetSection(DefaultResolverOptions.Key));
-            services.Configure<CustomResolversOptions>(config.GetSection(CustomResolversOptions.Key));
-
-            services.AddSingleton<DnsProxyService>();
-            services.AddTransient<IRequestResolver, CompositeRequestResolver>();
-            services.AddScoped<IRequestResolverFactory, RequestResolverFactory>();
-            services.AddScoped<ICustomRequestResolverFactory, CustomRequestResolverFactory>();
-
-            return services.BuildServiceProvider();
-        }
-    }
-}
+return await host.Services.GetRequiredService<CommandLineParser>().RunAsync(args);
