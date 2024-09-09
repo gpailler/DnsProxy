@@ -1,34 +1,32 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 
-namespace DnsProxy.Options
+namespace DnsProxy.Options;
+
+internal class EndPointOptions
 {
-    internal class EndPointOptions
+    public string? Address { get; set; }
+
+    public ushort Port { get; set; }
+
+    public static implicit operator IPEndPoint(EndPointOptions endPoint)
     {
-        public string? Address { get; set; }
-
-        public ushort Port { get; set; }
-
-        public static implicit operator IPEndPoint(EndPointOptions endPoint)
+        if (endPoint.Address == null)
         {
-            if (endPoint.Address == null)
-            {
-                throw new ArgumentException($"{nameof(Address)} option is null.");
-            }
-
-            try
-            {
-                return new IPEndPoint(IPAddress.Parse(endPoint.Address), endPoint.Port);
-            }
-            catch (Exception ex)
-            {
-                throw new FormatException($"{nameof(Address)} option '{endPoint.Address}' is invalid.", ex);
-            }
+            throw new ArgumentException($"{nameof(Address)} option is null.");
         }
 
-        public override string ToString()
+        try
         {
-            return ((IPEndPoint)this).ToString();
+            return new IPEndPoint(IPAddress.Parse(endPoint.Address), endPoint.Port);
         }
+        catch (Exception ex)
+        {
+            throw new FormatException($"{nameof(Address)} option '{endPoint.Address}' is invalid.", ex);
+        }
+    }
+
+    public override string ToString()
+    {
+        return ((IPEndPoint)this).ToString();
     }
 }

@@ -1,55 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 using DNS.Client.RequestResolver;
 using DNS.Protocol;
 using DnsProxy.Options;
 
-namespace DnsProxy.Resolvers
+namespace DnsProxy.Resolvers;
+
+internal class CustomRequestResolverFactory : ICustomRequestResolverFactory
 {
-    internal class CustomRequestResolverFactory : ICustomRequestResolverFactory
+    private readonly IRequestResolverFactory _requestResolverFactory;
+
+    public CustomRequestResolverFactory(IRequestResolverFactory requestResolverFactory)
     {
-        private readonly IRequestResolverFactory _requestResolverFactory;
+        _requestResolverFactory = requestResolverFactory;
+    }
 
-        public CustomRequestResolverFactory(IRequestResolverFactory requestResolverFactory)
+    public ICustomRequestResolver Create(CustomResolversOptions.Item customResolverOptions)
+    {
+        return new CustomRequestResolver(customResolverOptions.Rule, _requestResolverFactory.Create(customResolverOptions));
+    }
+
+    private class CustomRequestResolver : ICustomRequestResolver
+    {
+        private readonly IRequestResolver _resolver;
+        private readonly Regex _rule;
+
+        public CustomRequestResolver(string? rule, IRequestResolver resolver)
         {
-            _requestResolverFactory = requestResolverFactory;
+            _resolver = resolver;
+
+            if (rule == null)
+            {
+                throw new ArgumentException($"Empty rule");
+            }
+            _rule = new Regex(rule);
         }
 
-        public ICustomRequestResolver Create(CustomResolversOptions.Item customResolverOptions)
+        public bool Match(IEnumerable<Question> questions)
         {
-            return new CustomRequestResolver(customResolverOptions.Rule, _requestResolverFactory.Create(customResolverOptions));
+            return questions.All(question => _rule.IsMatch(question.Name.ToString()));
         }
 
-        private class CustomRequestResolver : ICustomRequestResolver
+        public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = new())
         {
-            private readonly IRequestResolver _resolver;
-            private readonly Regex _rule;
-
-            public CustomRequestResolver(string? rule, IRequestResolver resolver)
-            {
-                _resolver = resolver;
-
-                if (rule == null)
-                {
-                    throw new ArgumentException($"Empty rule");
-                }
-
-                _rule = new Regex(rule);
-            }
-
-            public bool Match(IEnumerable<Question> questions)
-            {
-                return questions.All(question => _rule.IsMatch(question.Name.ToString()));
-            }
-
-            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = new())
-            {
-                return _resolver.Resolve(request, cancellationToken);
-            }
+            return _resolver.Resolve(request, cancellationToken);
         }
     }
 }

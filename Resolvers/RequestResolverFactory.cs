@@ -2,22 +2,21 @@
 using DnsProxy.Options;
 using Microsoft.Extensions.Logging;
 
-namespace DnsProxy.Resolvers
+namespace DnsProxy.Resolvers;
+
+internal class RequestResolverFactory : IRequestResolverFactory
 {
-    internal class RequestResolverFactory : IRequestResolverFactory
+    private readonly ILogger<RequestResolverFactory> _logger;
+
+    public RequestResolverFactory(ILogger<RequestResolverFactory> logger)
     {
-        private readonly ILogger<RequestResolverFactory> _logger;
+        _logger = logger;
+    }
 
-        public RequestResolverFactory(ILogger<RequestResolverFactory> logger)
-        {
-            _logger = logger;
-        }
+    public IRequestResolver Create(EndPointOptions endpointOptions)
+    {
+        _logger.LogDebug($"Creating UDP resolver '{endpointOptions}'");
 
-        public IRequestResolver Create(EndPointOptions endpointOptions)
-        {
-            _logger.LogDebug($"Creating UDP resolver '{endpointOptions}'");
-
-            return new UdpRequestResolver(endpointOptions);
-        }
+        return new UdpRequestResolver(endpointOptions);
     }
 }

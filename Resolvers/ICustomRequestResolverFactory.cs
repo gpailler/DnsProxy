@@ -1,9 +1,8 @@
 ﻿using DnsProxy.Options;
 
-namespace DnsProxy.Resolvers
+namespace DnsProxy.Resolvers;
+
+internal interface ICustomRequestResolverFactory
 {
-    internal interface ICustomRequestResolverFactory
-    {
-        ICustomRequestResolver Create(CustomResolversOptions.Item customResolverOptions);
-    }
+    ICustomRequestResolver Create(CustomResolversOptions.Item customResolverOptions);
 }

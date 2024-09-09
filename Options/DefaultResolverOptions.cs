@@ -1,7 +1,6 @@
-﻿namespace DnsProxy.Options
+﻿namespace DnsProxy.Options;
+
+internal class DefaultResolverOptions : EndPointOptions
 {
-    internal class DefaultResolverOptions : EndPointOptions
-    {
-        public const string Key = "DefaultResolver";
-    }
+    public const string Key = "DefaultResolver";
 }

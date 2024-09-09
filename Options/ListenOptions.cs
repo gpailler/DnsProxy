@@ -1,7 +1,6 @@
-﻿namespace DnsProxy.Options
+﻿namespace DnsProxy.Options;
+
+internal class ListenOptions : EndPointOptions
 {
-    internal class ListenOptions : EndPointOptions
-    {
-        public const string Key = "Listen";
-    }
+    public const string Key = "Listen";
 }

@@ -1,11 +1,9 @@
-﻿using System.Net;
-using DNS.Client.RequestResolver;
+﻿using DNS.Client.RequestResolver;
 using DnsProxy.Options;
 
-namespace DnsProxy.Resolvers
+namespace DnsProxy.Resolvers;
+
+internal interface IRequestResolverFactory
 {
-    internal interface IRequestResolverFactory
-    {
-        IRequestResolver Create(EndPointOptions endpointOptions);
-    }
+    IRequestResolver Create(EndPointOptions endpointOptions);
 }
