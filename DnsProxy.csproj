@@ -32,9 +32,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="appsettings.base.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="appsettings.example.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
