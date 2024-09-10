@@ -52,7 +52,8 @@ jobs:
         -p:FileVersion=${{ env.GITVERSION_ASSEMBLYSEMFILEVER }}
         -p:InformationalVersion=${{ env.GITVERSION_INFORMATIONALVERSION }}
         --self-contained true
-        -p:PublishTrimmed=true
+        -p:PublishSingleFile=true
+        -p:EnableCompressionInSingleFile=true
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -84,7 +85,8 @@ jobs:
         with:
           directory: ./artifacts/win-x64-self-contained/
           filename: 'DnsProxy-win-x64-self-contained-${{ needs.build.outputs.semVer }}.zip'
-    
+          exclusions: 'aspnetcorev2_inprocess.dll *.pdb'
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
