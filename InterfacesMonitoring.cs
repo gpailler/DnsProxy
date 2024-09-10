@@ -1,5 +1,4 @@
-﻿using System.Management;
-using System.Net;
+﻿using System.Net;
 using System.Net.NetworkInformation;
 using System.Timers;
 using DnsProxy.Options;
@@ -47,10 +46,10 @@ internal class InterfacesMonitoring
     {
         _timer?.Dispose();
 
-        foreach (var (interfaceId, dnsServers) in _originalDnsServers)
+        foreach (var (interfaceName, dnsServers) in _originalDnsServers)
         {
             _logger.Information("Restoring original DNS servers...");
-            SetDnsServers(interfaceId, dnsServers);
+            SetDnsServers(interfaceName, dnsServers);
         }
     }
 
@@ -63,38 +62,21 @@ internal class InterfacesMonitoring
 
         foreach (var (networkInterface, properties) in matchingInterfaces)
         {
-            _originalDnsServers[networkInterface.Id] = properties.DnsAddresses.ToArray();
+            _originalDnsServers[networkInterface.Name] = properties.DnsAddresses.ToArray();
 
             _logger.Information("Replacing DNS servers...");
-            SetDnsServers(networkInterface.Id, [_listeningAddress]);
+            SetDnsServers(networkInterface.Name, [_listeningAddress]);
         }
 
         _timer?.Start();
     }
 
-    private void SetDnsServers(string interfaceId, IPAddress[] dnsServers)
+    private void SetDnsServers(string interfaceName, IPAddress[] dnsServers)
     {
-        var managementClass = new ManagementClass("Win32_NetworkAdapterConfiguration");
-        var networkAdapters = managementClass.GetInstances().OfType<ManagementObject>();
-
-        foreach (var adapter in networkAdapters)
+        Helpers.Run("netsh.exe", $"interface ipv4 set dnsservers name=\"{interfaceName}\" static {dnsServers[0]} primary", _logger);
+        if (dnsServers.Length > 1)
         {
-            if (adapter["SettingID"].ToString() == interfaceId)
-            {
-                var newDnsParameters = adapter.GetMethodParameters("SetDNSServerSearchOrder");
-                newDnsParameters["DNSServerSearchOrder"] = dnsServers;
-                var setDnsResult = adapter.InvokeMethod("SetDNSServerSearchOrder", newDnsParameters, null);
-
-                uint returnValue = (uint)setDnsResult["ReturnValue"];
-                if (returnValue == 0)
-                {
-                    _logger.Information("DNS servers for interface {Interface} updated successfully.", adapter["Caption"]);
-                }
-                else
-                {
-                    _logger.Warning("Failed to update DNS servers for inteface {Interface}. Error code: {Error}", adapter["Caption"], returnValue);
-                }
-            }
+            Helpers.Run("netsh.exe", $"interface ipv4 add dnsservers name=\"{interfaceName}\" {dnsServers[1]} index=2", _logger);
         }
     }
 }
