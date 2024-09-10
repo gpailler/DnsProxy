@@ -1,5 +1,4 @@
-﻿using DNS.Client.RequestResolver;
-using DnsProxy.Options;
+﻿using DnsProxy.Options;
 
 namespace DnsProxy.Resolvers;
 

@@ -18,24 +18,23 @@ internal class InterfacesMonitoring
     private readonly ILogger _logger;
     private readonly Timer? _timer;
 
-    private readonly Dictionary<string, string[]> _originalDnsServers = new();
+    private readonly Dictionary<string, IPAddress[]> _originalDnsServers = new();
 
     public InterfacesMonitoring(IOptions<MonitoringOptions> monitoringOptions, IOptions<ListenOptions> listenOptions, ILogger logger)
     {
         _monitoringOptions = monitoringOptions.Value;
-        ArgumentNullException.ThrowIfNull(listenOptions.Value.Address, nameof(listenOptions.Value.Address));
-        _listeningAddress = IPAddress.Parse(listenOptions.Value.Address);
+        _listeningAddress = ((IPEndPoint)listenOptions.Value).Address;
         _logger = logger;
 
-        if (Helpers.IsElevatedAccount())
+        if (!Helpers.IsElevatedAccount())
+        {
+            _logger.Warning("Interfaces monitoring is deactivated because it required elevated account.");
+        }
+        else if (_monitoringOptions.Interfaces?.Length > 0)
         {
             _timer = new Timer(s_monitoringInterval);
             _timer.AutoReset = false;
             _timer.Elapsed += OnTimerElapsed;
-        }
-        else
-        {
-            _logger.Warning("Interfaces monitoring is deactivated because it required elevated account.");
         }
     }
 
@@ -58,22 +57,22 @@ internal class InterfacesMonitoring
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
         var matchingInterfaces = NetworkInterface.GetAllNetworkInterfaces()
-            .Where(x => _monitoringOptions.Interfaces.Any(y => y == x.Name && x.OperationalStatus == OperationalStatus.Up))
+            .Where(x => _monitoringOptions.Interfaces!.Any(y => y == x.Name && x.OperationalStatus == OperationalStatus.Up))
             .Select(x => (Interface: x, Properties: x.GetIPProperties()))
-            .Where(x => x.Properties.DnsAddresses.All(y => y.Equals(_listeningAddress) == false));
+            .Where(x => x.Properties.DnsAddresses.All(a => !a.Equals(_listeningAddress)));
 
         foreach (var (networkInterface, properties) in matchingInterfaces)
         {
-            _originalDnsServers[networkInterface.Id] = properties.DnsAddresses.Select(x => x.ToString()).ToArray();
+            _originalDnsServers[networkInterface.Id] = properties.DnsAddresses.ToArray();
 
             _logger.Information("Replacing DNS servers...");
-            SetDnsServers(networkInterface.Id, [_listeningAddress.ToString()]);
+            SetDnsServers(networkInterface.Id, [_listeningAddress]);
         }
 
         _timer?.Start();
     }
 
-    private void SetDnsServers(string interfaceId, string[] dnsServers)
+    private void SetDnsServers(string interfaceId, IPAddress[] dnsServers)
     {
         var managementClass = new ManagementClass("Win32_NetworkAdapterConfiguration");
         var networkAdapters = managementClass.GetInstances().OfType<ManagementObject>();

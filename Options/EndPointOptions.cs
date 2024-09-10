@@ -8,6 +8,8 @@ internal class EndPointOptions
 
     public ushort Port { get; set; }
 
+    public int Timeout { get; set; } = 10000;
+
     public static implicit operator IPEndPoint(EndPointOptions endPoint)
     {
         if (endPoint.Address == null)

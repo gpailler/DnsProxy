@@ -1,9 +1,6 @@
-﻿using DNS.Client.RequestResolver;
-using DNS.Protocol;
+﻿namespace DnsProxy.Resolvers;
 
-namespace DnsProxy.Resolvers;
-
-public interface ICustomRequestResolver : IRequestResolver
+internal interface ICustomRequestResolver : IRequestResolver
 {
-    bool Match(IEnumerable<Question> questions);
+    bool Match(IRequest request);
 }
