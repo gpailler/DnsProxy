@@ -1,20 +1,20 @@
 ﻿# DnsProxy
- 
- 
-[![Build status](https://github.com/gpailler/DnsProxy/actions/workflows/main.yml/badge.svg)](https://github.com/gpailler/DnsProxy/actions/workflows/main.yml)
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/gpailler/DnsProxy)](https://github.com/gpailler/DnsProxy/releases)
+
+[![Build Status](https://github.com/gpailler/DnsProxy/actions/workflows/main.yml/badge.svg)](https://github.com/gpailler/DnsProxy/actions/workflows/main.yml)
+[![GitHub Release (Latest SemVer)](https://img.shields.io/github/v/release/gpailler/DnsProxy)](https://github.com/gpailler/DnsProxy/releases)
 [![License](https://img.shields.io/github/license/gpailler/DnsProxy)](https://github.com/gpailler/DnsProxy/blob/master/LICENSE)
 
 ### Description
+
 DnsProxy is a lightweight DNS forwarder designed to forward DNS queries to real, recursive DNS servers based on configurable rules.
-It's a small .Net 5 console application that can be installed as a Windows service.
+It is a small .NET 8 console application that can be installed as a Windows service.
 
-DnsProxy was designed to speed up DNS resolution when using a VPN in a professional environment.
+DnsProxy is intended to improve DNS resolution speed when using a VPN in a professional environment.
 
-For instance, when connecting a company VPN through GlobalProtect client, all the DNS queries are forwarded to the company name servers and it can introduce a performance hit depending of the latency of the VPN.
-With DnsProxy, the DNS queries are forwarded to upstreams name servers based on regular expressions.
+For example, when connected to a company VPN via the GlobalProtect client, all DNS queries are routed through the company's name servers, which can slow down performance, particularly when there is high VPN latency. With DnsProxy, DNS queries are forwarded to upstream name servers based on configurable regular expression rules.
 
-### Configuration example
+### Configuration Example
+
 ```json
 // appsettings.json file
 {
@@ -23,13 +23,16 @@ With DnsProxy, the DNS queries are forwarded to upstreams name servers based on 
         "Address": "127.0.0.1",
         "Port": 53
     },
+    "Monitoring": {
+        "Interfaces": [ "VPN" ]
+    },
     "DefaultResolver": {
         "Address": "192.168.10.254",
         "Port": 53
     },
     "CustomResolvers": [
         {
-            "Rule": "^(jira\\.mycompany\\.com|.+\\.corp\\.mycompany\\.com)$",
+            "Rule": "^(jira\\.mycompany\\.com|.+\\.corp\\.mycompany\\.com)\\.?$",
             "Address": "172.16.10.1",
             "Port": 53
         },
@@ -42,15 +45,23 @@ With DnsProxy, the DNS queries are forwarded to upstreams name servers based on 
 }
 ```
 
-### Installation / Configuration
-- Download the latest [release](https://github.com/gpailler/DnsProxy/releases) and extract it in a convenient place.
-- Rename `appsettings.example.json` to `appsettings.json` and edit the settings according to your needs.
-- Change your preferred DNS server to `127.0.0.1` (or execute the command `netsh interface ipv4 set dnsservers name="[Network Interface Name]" source=static address=127.0.0.1`).
-- Run `DnsProxy.exe`.
+### Installation
 
-### Run as a Service
-⚠️ DnsProxy runs using the less privileged NetworkService account. You need to edit the permissions of the DnsProxy folder and add the `NETWORK SERVICE` account with `Read & Execute` permissions.
-- Install DnsProxy as a service by running `DnsProxy.exe install`.
-- Start DnsProxy with `DnsProxy.exe start` (or through the Services MMC).
-- When executed as a service, DnsProxy logs can be found in `C:\Windows\ServiceProfiles\NetworkService\AppData\Local\Temp\DnsProxy.log`.
+1. Download the latest [release](https://github.com/gpailler/DnsProxy/releases) and extract it to a convenient location.
+2. Rename `appsettings.example.json` to `appsettings.json`, and update the configuration to suit your needs.
+3. Run `DnsProxy.exe`.
 
+### Usage
+
+To use DnsProxy, set the DNS server of the appropriate network interface to `127.0.0.1`:
+- By manually adjusting the network adapter settings in the Windows GUI.
+- By running the following command:
+  `netsh interface ipv4 set dnsservers name="VPN" source=static address=127.0.0.1`
+- Alternatively, let DnsProxy handle this for you. It can monitor network interfaces and automatically update DNS settings as needed (requires admin privileges).
+
+### Running as a Service
+
+- To install DnsProxy as a Windows service, run:
+  `DnsProxy.exe service install`
+- To uninstall DnsProxy as a Windows service, run:
+  `DnsProxy.exe service uninstall`
