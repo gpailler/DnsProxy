@@ -1,5 +1,4 @@
-﻿using DNS.Client.RequestResolver;
-using DnsProxy;
+﻿using DnsProxy;
 using DnsProxy.Options;
 using DnsProxy.Resolvers;
 using Microsoft.Extensions.Configuration;
@@ -25,7 +24,7 @@ var builder = Host.CreateApplicationBuilder(args);
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 7,
             outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [PID: {ProcessId}] {Message:lj}{NewLine}{Exception}")
-        .WriteTo.Console();
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}");
 });
 
 // Options
