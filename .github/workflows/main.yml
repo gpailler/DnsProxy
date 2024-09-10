@@ -38,9 +38,9 @@ jobs:
         --configuration ${{ env.CONFIGURATION }}
         --runtime win-x64
         --output ./artifacts/win-x64
-        -p:Version=${{ env.GITVERSION_SEMVER }}
-        -p:FileVersion=${{ env.GITVERSION_ASSEMBLYSEMFILEVER }}
-        -p:InformationalVersion=${{ env.GITVERSION_INFORMATIONALVERSION }}
+        -p:Version=${{ steps.gitversion.outputs.semVer }}
+        -p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }}
+        -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
 
     - name: Publish win-x64 AOT
       run: >-
@@ -48,9 +48,9 @@ jobs:
         --configuration ${{ env.CONFIGURATION }}
         --runtime win-x64
         --output ./artifacts/win-x64-aot
-        -p:Version=${{ env.GITVERSION_SEMVER }}
-        -p:FileVersion=${{ env.GITVERSION_ASSEMBLYSEMFILEVER }}
-        -p:InformationalVersion=${{ env.GITVERSION_INFORMATIONALVERSION }}
+        -p:Version=${{ steps.gitversion.outputs.semVer }}
+        -p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }}
+        -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
         -p:PublishAOT=true
 
     - name: Upload artifacts
