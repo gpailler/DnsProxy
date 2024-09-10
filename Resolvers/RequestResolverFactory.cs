@@ -30,7 +30,7 @@ internal class RequestResolverFactory : IRequestResolverFactory
         {
             _endpoint = (IPEndPoint)endpointOptions;
 
-            var transport = new IClientTransport[] { new UdpClientTransport(_endpoint.Port), new TcpClientTransport(_endpoint.Port) };
+            var transport = new IClientTransport[] { new TcpClientTransport(_endpoint.Port) };
             _client = new DnsClient([_endpoint.Address], transport, true, endpointOptions.Timeout);
         }
 
