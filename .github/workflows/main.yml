@@ -90,5 +90,5 @@ jobs:
         with:
           files: |
             ./artifacts/win-x64/*.zip
-            ./artifacts/win-x64-self-contained/*.zip
+            ./artifacts/win-x64-aot/*.zip
           draft: true
