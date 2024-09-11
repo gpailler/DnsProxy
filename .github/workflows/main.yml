@@ -35,6 +35,7 @@ jobs:
     - name: Publish win-x64
       run: >-
         dotnet publish
+        ./src/DnsProxy.csproj
         --configuration ${{ env.CONFIGURATION }}
         --runtime win-x64
         --output ./artifacts/win-x64
@@ -45,6 +46,7 @@ jobs:
     - name: Publish win-x64 AOT
       run: >-
         dotnet publish
+        ./src/DnsProxy.csproj
         --configuration ${{ env.CONFIGURATION }}
         --runtime win-x64
         --output ./artifacts/win-x64-aot
