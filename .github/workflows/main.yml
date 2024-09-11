@@ -32,16 +32,31 @@ jobs:
       id: gitversion
       uses: gittools/actions/gitversion/execute@v3.0.0
 
-    - name: Publish win-x64
+    - name: Publish win-x64 framework-dependent
       run: >-
         dotnet publish
         ./src/DnsProxy.csproj
         --configuration ${{ env.CONFIGURATION }}
         --runtime win-x64
-        --output ./artifacts/win-x64
+        --output ./artifacts/win-x64-framework-dependent
         -p:Version=${{ steps.gitversion.outputs.semVer }}
         -p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }}
         -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+        -p:SelfContained=false
+        -p:PublishTrimmed=false
+
+    - name: Publish win-x64 self-contained
+      run: >-
+        dotnet publish
+        ./src/DnsProxy.csproj
+        --configuration ${{ env.CONFIGURATION }}
+        --runtime win-x64
+        --output ./artifacts/win-x64-self-contained
+        -p:Version=${{ steps.gitversion.outputs.semVer }}
+        -p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }}
+        -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+        -p:SelfContained=true
+        -p:PublishSingleFile=true
 
     - name: Publish win-x64 AOT
       run: >-
@@ -74,13 +89,19 @@ jobs:
           name: Binaries
           path: ./artifacts/
 
-      - name: Archive win-x64
+      - name: Archive win-x64 (framework-dependent)
         uses: thedoctor0/zip-release@0.7.5
         with:
-          directory: ./artifacts/win-x64/
-          filename: 'DnsProxy-win-x64-${{ needs.build.outputs.semVer }}.zip'
+          directory: ./artifacts/win-x64-framework-dependent/
+          filename: 'DnsProxy-win-x64-framework-dependent-${{ needs.build.outputs.semVer }}.zip'
 
-      - name: Archive win-x64-aot
+      - name: Archive win-x64 (self-contained)
+        uses: thedoctor0/zip-release@0.7.5
+        with:
+          directory: ./artifacts/win-x64-self-contained/
+          filename: 'DnsProxy-win-x64-self-contained-${{ needs.build.outputs.semVer }}.zip'
+
+      - name: Archive win-x64 (AOT)
         uses: thedoctor0/zip-release@0.7.5
         with:
           directory: ./artifacts/win-x64-aot/
@@ -91,6 +112,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./artifacts/win-x64/*.zip
+            ./artifacts/win-x64-framework-dependent/*.zip
+            ./artifacts/win-x64-self-contained/*.zip
             ./artifacts/win-x64-aot/*.zip
           draft: true

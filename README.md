@@ -47,7 +47,7 @@ For example, when connected to a company VPN via the GlobalProtect client, all D
 
 ### Installation
 
-1. Download the latest [release](https://github.com/gpailler/DnsProxy/releases) and extract it to a convenient location.
+1. Download the latest `DnsProxy-win-x64-aot` archive from the [release](https://github.com/gpailler/DnsProxy/releases) and extract it to a convenient location.
 2. Rename `appsettings.example.json` to `appsettings.json`, and update the configuration to suit your needs.
 3. Run `DnsProxy.exe`.
 
