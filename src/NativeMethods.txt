@@ -1,0 +1,4 @@
+﻿SetInterfaceDnsSettings
+FreeInterfaceDnsSettings
+DNS_INTERFACE_SETTINGS_*
+DNS_SETTING_*
