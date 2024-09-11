@@ -1,6 +1,10 @@
 ﻿using System.Net;
 using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 using System.Timers;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.NetworkManagement.IpHelper;
 using DnsProxy.Options;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -17,7 +21,7 @@ internal class InterfacesMonitoring
     private readonly ILogger _logger;
     private readonly Timer? _timer;
 
-    private readonly Dictionary<string, IPAddress[]> _originalDnsServers = new();
+    private readonly Dictionary<Guid, IPAddress[]> _originalDnsServers = new();
 
     public InterfacesMonitoring(IOptions<MonitoringOptions> monitoringOptions, IOptions<ListenOptions> listenOptions, ILogger logger)
     {
@@ -46,37 +50,54 @@ internal class InterfacesMonitoring
     {
         _timer?.Dispose();
 
-        foreach (var (interfaceName, dnsServers) in _originalDnsServers)
+        foreach (var (interfaceId, dnsServers) in _originalDnsServers)
         {
             _logger.Information("Restoring original DNS servers...");
-            SetDnsServers(interfaceName, dnsServers);
+            SetDnsServers(interfaceId, dnsServers);
         }
     }
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
         var matchingInterfaces = NetworkInterface.GetAllNetworkInterfaces()
-            .Where(x => _monitoringOptions.Interfaces!.Any(y => y == x.Name && x.OperationalStatus == OperationalStatus.Up))
-            .Select(x => (Interface: x, Properties: x.GetIPProperties()))
-            .Where(x => x.Properties.DnsAddresses.All(a => !a.Equals(_listeningAddress)));
+            .Where(networkInterface => networkInterface.OperationalStatus == OperationalStatus.Up
+                                       && _monitoringOptions.Interfaces!.Contains(networkInterface.Name))
+            .Select(networkInterface => (Guid.Parse(networkInterface.Id), networkInterface.GetIPProperties().DnsAddresses))
+            .Where(networkInterface => !networkInterface.DnsAddresses.Intersect([_listeningAddress]).Any());
 
-        foreach (var (networkInterface, properties) in matchingInterfaces)
+        foreach (var (interfaceId, dnsServers) in matchingInterfaces)
         {
-            _originalDnsServers[networkInterface.Name] = properties.DnsAddresses.ToArray();
+            if (dnsServers.Any())
+            {
+                _originalDnsServers[interfaceId] = dnsServers.ToArray();
 
-            _logger.Information("Replacing DNS servers...");
-            SetDnsServers(networkInterface.Name, [_listeningAddress]);
+                _logger.Information("Replacing DNS servers...");
+                SetDnsServers(interfaceId, [_listeningAddress]);
+            }
         }
 
         _timer?.Start();
     }
 
-    private void SetDnsServers(string interfaceName, IPAddress[] dnsServers)
+    private unsafe void SetDnsServers(Guid interfaceId, IPAddress[] dnsServers)
     {
-        Helpers.Run("netsh.exe", $"interface ipv4 set dnsservers name=\"{interfaceName}\" static {dnsServers[0]} primary", _logger);
-        if (dnsServers.Length > 1)
+        var settings = new DNS_INTERFACE_SETTINGS();
+        settings.Flags = PInvoke.DNS_SETTING_NAMESERVER;
+        settings.Version = PInvoke.DNS_INTERFACE_SETTINGS_VERSION1;
+        var nameServers = Marshal.StringToHGlobalUni(string.Join(',', dnsServers.Select(x => x.ToString())));
+        settings.NameServer = new PWSTR((char*)nameServers);
+
+        try
         {
-            Helpers.Run("netsh.exe", $"interface ipv4 add dnsservers name=\"{interfaceName}\" {dnsServers[1]} index=2", _logger);
+            var result = PInvoke.SetInterfaceDnsSettings(interfaceId, settings);
+            if (result != WIN32_ERROR.NO_ERROR)
+            {
+                _logger.Error("Failed to set DNS settings for interface {InterfaceId}. Error: {Error}", interfaceId, result);
+            }
+        }
+        finally
+        {
+            PInvoke.FreeInterfaceDnsSettings(ref settings);
         }
     }
 }
