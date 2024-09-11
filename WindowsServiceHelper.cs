@@ -16,44 +16,39 @@ internal class WindowsServiceHelper
         _logger = logger;
     }
 
-    public Task InstallAsync(string extraArguments = "")
+    public async Task InstallAsync(string extraArguments = "")
     {
         if (!Helpers.IsElevatedAccount())
         {
             _logger.Error("This command must be executed from an elevated command prompt.");
-            return Task.CompletedTask;
         }
 
         _logger.Information($"Installing and starting {ServiceName}...");
         string appFilePath = Path.Combine(_env.ContentRootPath, Path.ChangeExtension(_env.ApplicationName, "exe"));
         extraArguments = string.IsNullOrEmpty(extraArguments) ? "" : $" {extraArguments}";
-        if (RunSc($@"create ""{ServiceName}"" binpath= ""{appFilePath}{extraArguments}"" start= delayed-auto"))
+        if (await RunScAsync($@"create ""{ServiceName}"" binpath= ""{appFilePath}{extraArguments}"" start= delayed-auto"))
         {
             _logger.Information($"Starting {ServiceName}...");
-            RunSc($@"start ""{ServiceName}""");
+            await RunScAsync($@"start ""{ServiceName}""");
         }
-
-        return Task.CompletedTask;
     }
 
-    public Task UninstallAsync()
+    public async Task UninstallAsync()
     {
         if (!Helpers.IsElevatedAccount())
         {
             _logger.Error("This command must be executed from an elevated command prompt.");
-            return Task.CompletedTask;
         }
 
         _logger.Information($"Stopping {ServiceName}...");
-        RunSc($@"stop ""{ServiceName}""");
+        await RunScAsync($@"stop ""{ServiceName}""");
 
         _logger.Information($"Uninstalling {ServiceName}...");
-        RunSc($@"delete ""{ServiceName}""");
-        return Task.CompletedTask;
+        await RunScAsync($@"delete ""{ServiceName}""");
     }
 
-    private bool RunSc(string arguments)
+    private Task<bool> RunScAsync(string arguments)
     {
-        return Helpers.Run("sc.exe", arguments, _logger);
+        return Helpers.RunAsync("sc.exe", arguments, _logger);
     }
 }

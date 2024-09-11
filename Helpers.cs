@@ -13,7 +13,7 @@ public static class Helpers
         return principal.IsInRole(WindowsBuiltInRole.Administrator);
     }
 
-    public static bool Run(string fileName, string arguments, ILogger logger)
+    public static async Task<bool> RunAsync(string fileName, string arguments, ILogger logger)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -36,7 +36,7 @@ public static class Helpers
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-        process.WaitForExit();
+        await process.WaitForExitAsync();
 
         logger.Information("Command execution result: {ExitCode}", process.ExitCode);
 
