@@ -8,6 +8,6 @@ internal class CustomResolversOptions : Collection<CustomResolversOptions.Item>
 
     internal class Item : EndPointOptions
     {
-        public string? Rule { get; set; }
+        public string Rule { get; set; } = null!;
     }
 }
