@@ -28,10 +28,18 @@ builder.Services.AddSerilog((provider, configuration) =>
 });
 
 // Options
-builder.Services.Configure<ListenOptions>(builder.Configuration.GetSection(ListenOptions.Key));
-builder.Services.Configure<DefaultResolverOptions>(builder.Configuration.GetSection(DefaultResolverOptions.Key));
-builder.Services.Configure<CustomResolversOptions>(builder.Configuration.GetSection(CustomResolversOptions.Key));
-builder.Services.Configure<MonitoringOptions>(builder.Configuration.GetSection(MonitoringOptions.Key));
+builder.Services
+    .AddOptionsWithValidateOnStart<ListenOptions, ListenOptions.Validator>()
+    .Bind(builder.Configuration.GetSection(ListenOptions.Key));
+builder.Services
+    .AddOptionsWithValidateOnStart<DefaultResolverOptions, DefaultResolverOptions.Validator>()
+    .Bind(builder.Configuration.GetSection(DefaultResolverOptions.Key));
+builder.Services
+    .AddOptionsWithValidateOnStart<CustomResolversOptions, CustomResolversOptions.Validator>()
+    .Bind(builder.Configuration.GetSection(CustomResolversOptions.Key));
+builder.Services
+    .AddOptionsWithValidateOnStart<MonitoringOptions, MonitoringOptions.Validator>()
+    .Bind(builder.Configuration.GetSection(MonitoringOptions.Key));
 
 // Services
 builder.Services.AddTransient<IRequestResolver, CompositeRequestResolver>();
@@ -39,9 +47,9 @@ builder.Services.AddScoped<IRequestResolverFactory, RequestResolverFactory>();
 builder.Services.AddScoped<ICustomRequestResolverFactory, CustomRequestResolverFactory>();
 builder.Services.AddSingleton<WindowsServiceHelper>();
 builder.Services.AddSingleton<CommandLineParser>();
-builder.Services.AddSingleton<SettingsValidator>();
 builder.Services.AddSingleton<InterfacesMonitoring>();
 builder.Services.AddSingleton<LoggingLevelSwitch>();
+builder.Services.AddSingleton<OptionsValidator>();
 builder.Services.AddHostedService<DnsProxyService>();
 
 // Service configuration
@@ -50,7 +58,7 @@ builder.Services.AddWindowsService(options => options.ServiceName = WindowsServi
 // Run app
 using var host = builder.Build();
 DumpAppHeader();
-if (await host.Services.GetRequiredService<SettingsValidator>().ValidateSettings())
+if (host.Services.GetRequiredService<OptionsValidator>().Validate())
 {
     return await host.Services.GetRequiredService<CommandLineParser>().RunAsync(args);
 }
