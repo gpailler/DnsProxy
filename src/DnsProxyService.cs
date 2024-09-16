@@ -11,16 +11,16 @@ namespace DnsProxy;
 
 internal class DnsProxyService : BackgroundService
 {
-    private readonly ListenOptions _options;
+    private readonly IPAddress _listeningAddress;
     private readonly ILogger _logger;
     private readonly IRequestResolver _resolver;
     private readonly InterfacesMonitoring _monitoring;
 
     private CancellationToken _stoppingToken;
 
-    public DnsProxyService(IOptions<ListenOptions> options, ILogger logger, IRequestResolver resolver, InterfacesMonitoring monitoring)
+    public DnsProxyService(IOptions<ListenOptions> listenOptions, ILogger logger, IRequestResolver resolver, InterfacesMonitoring monitoring)
     {
-        _options = options.Value;
+        _listeningAddress = ((IPEndPoint)listenOptions.Value).Address;
         _logger = logger;
         _resolver = resolver;
         _monitoring = monitoring;
@@ -34,12 +34,11 @@ internal class DnsProxyService : BackgroundService
         _monitoring.Start();
         try
         {
-            var listeningAddress = ((IPEndPoint)_options).Address;
-            using var server = new DnsServer(new UdpServerTransport(listeningAddress), new TcpServerTransport(listeningAddress));
+            using var server = new DnsServer(new UdpServerTransport(_listeningAddress), new TcpServerTransport(_listeningAddress));
             server.QueryReceived += OnQueryReceived;
             server.ExceptionThrown += OnExceptionThrown;
             server.Start();
-            _logger.Information("Server started. Listening on {Options}", _options);
+            _logger.Information("Server started. Listening on {Options}", _listeningAddress);
 
             var tcs = new TaskCompletionSource<bool>();
             await using (stoppingToken.Register(() => tcs.SetResult(true)))

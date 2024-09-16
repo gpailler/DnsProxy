@@ -15,7 +15,7 @@ namespace DnsProxy;
 internal class InterfacesMonitoring
 {
     private readonly MonitoringOptions _monitoringOptions;
-    private readonly IOptions<ListenOptions> _listenOptions;
+    private readonly IPAddress _listeningAddress;
     private readonly ILogger _logger;
     private readonly Timer? _timer;
     private readonly Dictionary<Guid, IPAddress[]> _originalDnsServers = new();
@@ -23,7 +23,7 @@ internal class InterfacesMonitoring
     public InterfacesMonitoring(IOptions<MonitoringOptions> monitoringOptions, IOptions<ListenOptions> listenOptions, ILogger logger)
     {
         _monitoringOptions = monitoringOptions.Value;
-        _listenOptions = listenOptions;
+        _listeningAddress = ((IPEndPoint)listenOptions.Value).Address;
         _logger = logger;
 
         if (!Helpers.IsElevatedAccount())
@@ -56,12 +56,11 @@ internal class InterfacesMonitoring
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
-        var listeningAddress = ((IPEndPoint)_listenOptions.Value).Address;
         var matchingInterfaces = NetworkInterface.GetAllNetworkInterfaces()
             .Where(networkInterface => networkInterface.OperationalStatus == OperationalStatus.Up
                                        && _monitoringOptions.Interfaces!.Contains(networkInterface.Name))
             .Select(networkInterface => (Guid.Parse(networkInterface.Id), networkInterface.GetIPProperties().DnsAddresses))
-            .Where(networkInterface => !networkInterface.DnsAddresses.Intersect([listeningAddress]).Any());
+            .Where(networkInterface => !networkInterface.DnsAddresses.Intersect([_listeningAddress]).Any());
 
         foreach (var (interfaceId, dnsServers) in matchingInterfaces)
         {
@@ -70,7 +69,7 @@ internal class InterfacesMonitoring
                 _originalDnsServers[interfaceId] = dnsServers.ToArray();
 
                 _logger.Information("Replacing DNS servers...");
-                SetDnsServers(interfaceId, [listeningAddress]);
+                SetDnsServers(interfaceId, [_listeningAddress]);
             }
         }
 
