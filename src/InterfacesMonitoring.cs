@@ -14,13 +14,10 @@ namespace DnsProxy;
 
 internal class InterfacesMonitoring
 {
-    private static readonly TimeSpan s_monitoringInterval = TimeSpan.FromSeconds(5);
-
     private readonly MonitoringOptions _monitoringOptions;
     private readonly IPAddress _listeningAddress;
     private readonly ILogger _logger;
     private readonly Timer? _timer;
-
     private readonly Dictionary<Guid, IPAddress[]> _originalDnsServers = new();
 
     public InterfacesMonitoring(IOptions<MonitoringOptions> monitoringOptions, IOptions<ListenOptions> listenOptions, ILogger logger)
@@ -35,7 +32,7 @@ internal class InterfacesMonitoring
         }
         else if (_monitoringOptions.Interfaces?.Length > 0)
         {
-            _timer = new Timer(s_monitoringInterval);
+            _timer = new Timer(_monitoringOptions.Interval);
             _timer.AutoReset = false;
             _timer.Elapsed += OnTimerElapsed;
         }

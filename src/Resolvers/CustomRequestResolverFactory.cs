@@ -22,13 +22,8 @@ internal class CustomRequestResolverFactory : ICustomRequestResolverFactory
         private readonly IRequestResolver _resolver;
         private readonly Regex _rule;
 
-        public CustomRequestResolver(string? rule, IRequestResolver resolver)
+        public CustomRequestResolver(string rule, IRequestResolver resolver)
         {
-            if (rule == null)
-            {
-                throw new ArgumentException($"Empty rule");
-            }
-
             _rule = new Regex(rule);
             _resolver = resolver;
         }

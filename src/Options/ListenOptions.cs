@@ -1,6 +1,11 @@
-﻿namespace DnsProxy.Options;
+﻿using Microsoft.Extensions.Options;
 
-internal class ListenOptions : EndPointOptions
+namespace DnsProxy.Options;
+
+internal partial class ListenOptions : EndPointOptions
 {
     public const string Key = "Listen";
+
+    [OptionsValidator]
+    public partial class Validator : IValidateOptions<ListenOptions>;
 }

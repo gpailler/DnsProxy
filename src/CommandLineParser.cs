@@ -1,7 +1,5 @@
 ﻿using System.CommandLine;
-using System.Reflection;
 using Microsoft.Extensions.Hosting;
-using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 
@@ -12,30 +10,17 @@ internal class CommandLineParser
     private readonly IHost _host;
     private readonly WindowsServiceHelper _windowsServiceHelper;
     private readonly LoggingLevelSwitch _loggingLevelSwitch;
-    private readonly ILogger _logger;
 
-    public CommandLineParser(IHost host, WindowsServiceHelper windowsServiceHelper, LoggingLevelSwitch loggingLevelSwitch, ILogger logger)
+    public CommandLineParser(IHost host, WindowsServiceHelper windowsServiceHelper, LoggingLevelSwitch loggingLevelSwitch)
     {
         _host = host;
         _windowsServiceHelper = windowsServiceHelper;
         _loggingLevelSwitch = loggingLevelSwitch;
-        _logger = logger;
     }
 
     public Task<int> RunAsync(params string[] args)
     {
-        DumpAppHeader();
-
-        var rootCommand = CreateRootCommand();
-
-        return rootCommand.InvokeAsync(args);
-    }
-
-    private void DumpAppHeader()
-    {
-        string? semVer = GetType().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
-        string? informationalVersion = GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        _logger.Information("DNS Proxy v{SemVer} ({InformationalVersion})", semVer, informationalVersion);
+        return CreateRootCommand().InvokeAsync(args);
     }
 
     private RootCommand CreateRootCommand()
