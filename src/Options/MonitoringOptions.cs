@@ -19,12 +19,15 @@ internal partial class MonitoringOptions
 
         protected override IEnumerable<ValidateOptionsResult> ValidateOptions(string? name, MonitoringOptions options)
         {
-            yield return _defaultValidator.Validate(name, options);
+            List<ValidateOptionsResult> results = new();
+            results.Add(_defaultValidator.Validate(name, options));
 
             if (options.Interfaces != null && options.Interfaces.Any(x => x.Length == 0))
             {
-                yield return ValidateOptionsResult.Fail($"{nameof(Interfaces)}: The field {nameof(MonitoringOptions)}.{nameof(Interfaces)} must not contain empty values.");
+                results.Add(ValidateOptionsResult.Fail($"{nameof(Interfaces)}: The field {nameof(MonitoringOptions)}.{nameof(Interfaces)} must not contain empty values."));
             }
+
+            return results;
         }
 
         [OptionsValidator]
